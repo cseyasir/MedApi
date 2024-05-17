@@ -8,14 +8,13 @@ const connection = mysql.createConnection({
   user: 'um7fb6dpdltqebgp',
   password: '3vMkAyEUGmwtatRxlVva',
   database: 'br2kncimwwsehxyqeqzu',
-    connectTimeout: 200000
-  });
+});
 
 connection.connect();
 
 const server = http.createServer((req, res) => {
   cors()(req, res, () => {
-    if (req.method === 'GET' && req.url === '/medicine') {
+    if (req.method === 'GET' && req.url === '/medicines') {
       // Fetch all medicines from the database
       connection.query('SELECT * FROM medicine', (error, results) => {
         if (error) {
@@ -28,12 +27,12 @@ const server = http.createServer((req, res) => {
           res.end(JSON.stringify(results));
         }
       });
-    } else if (req.method === 'GET' && req.url.startsWith('/medicine/search?')) {
+    } else if (req.method === 'GET' && req.url.startsWith('/medicines/search?')) {
       // Search for medicines by name
       const query = req.url.split('?')[1]; // Extract query parameter
       const partialName = decodeURIComponent(query.split('=')[1]).toLowerCase();
 
-      connection.query('SELECT * FROM medicine WHERE name LIKE ?', [`%${partialName}%`], (error, results) => {
+      connection.query('SELECT * FROM medicine WHERE medicine_name LIKE ?', [`%${partialName}%`], (error, results) => {
         if (error) {
           res.statusCode = 500;
           res.setHeader('Content-Type', 'text/plain');
@@ -50,11 +49,11 @@ const server = http.createServer((req, res) => {
           }
         }
       });
-    } else if (req.method === 'GET' && req.url.startsWith('/medicine/')) {
+    } else if (req.method === 'GET' && req.url.startsWith('/medicines/')) {
       // Fetch a specific medicine by ID
-      const medicineId = decodeURIComponent(req.url.replace('/medicine/', ''));
+      const medicineId = decodeURIComponent(req.url.replace('/medicines/', ''));
 
-      connection.query('SELECT * FROM Medicine WHERE name = ?', [medicineId], (error, results) => {
+      connection.query('SELECT * FROM medicine WHERE medicine_name = ?', [medicineId], (error, results) => {
         if (error) {
           res.statusCode = 500;
           res.setHeader('Content-Type', 'text/plain');
@@ -74,28 +73,38 @@ const server = http.createServer((req, res) => {
     } else if (req.method === 'POST' && req.url === '/medicines') {
       // Add a new medicine
       let newMedicineData = '';
-
+    
       req.on('data', (chunk) => {
         newMedicineData += chunk;
       });
-
+    
       req.on('end', () => {
-        const newMedicine = JSON.parse(newMedicineData);
-
-        connection.query('INSERT INTO Medicine SET ?', newMedicine, (error, result) => {
-          if (error) {
-            res.statusCode = 500;
-            res.setHeader('Content-Type', 'text/plain');
-            res.end('Internal Server Error');
-          } else {
-            newMedicine.id = result.insertId;
-            res.statusCode = 201;
-            res.setHeader('Content-Type', 'application/json');
-            res.end(JSON.stringify(newMedicine));
-          }
-        });
+        try {
+          const newMedicine = JSON.parse(newMedicineData);
+          
+          // Convert price to integer
+          newMedicine.price = parseInt(newMedicine.price);
+    
+          connection.query('INSERT INTO medicine SET ?', newMedicine, (error, result) => {
+            if (error) {
+              res.statusCode = 500;
+              res.setHeader('Content-Type', 'text/plain');
+              res.end('Internal Server Error');
+            } else {
+              newMedicine.id = result.insertId;
+              res.statusCode = 201;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify(newMedicine));
+            }
+          });
+        } catch (error) {
+          res.statusCode = 400;
+          res.setHeader('Content-Type', 'text/plain');
+          res.end('Invalid JSON data');
+        }
       });
-    } else {
+    }
+     else {
       res.statusCode = 404;
       res.setHeader('Content-Type', 'text/plain');
       res.end('oops Not Found');
