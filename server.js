@@ -7,7 +7,8 @@ const connection = mysql.createConnection({
     host: '192.168.1.14',
     user: 'sheikh',
     password: 'Cseeng123#',
-    database: 'medical'
+    database: 'medical',
+    connectTimeout: 200000
   });
 
 connection.connect();
