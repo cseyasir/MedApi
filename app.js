@@ -4,10 +4,10 @@ const cors = require('cors');
 const port = 5000;
 
 const connection = mysql.createConnection({
-    host: '192.168.1.14',
-    user: 'sheikh',
-    password: 'Cseeng123#',
-    database: 'medical',
+  host: 'br2kncimwwsehxyqeqzu-mysql.services.clever-cloud.com',
+  user: 'um7fb6dpdltqebgp',
+  password: '3vMkAyEUGmwtatRxlVva',
+  database: 'br2kncimwwsehxyqeqzu',
     connectTimeout: 200000
   });
 
@@ -15,9 +15,9 @@ connection.connect();
 
 const server = http.createServer((req, res) => {
   cors()(req, res, () => {
-    if (req.method === 'GET' && req.url === '/medicines') {
+    if (req.method === 'GET' && req.url === '/medicine') {
       // Fetch all medicines from the database
-      connection.query('SELECT * FROM Medicine', (error, results) => {
+      connection.query('SELECT * FROM medicine', (error, results) => {
         if (error) {
           res.statusCode = 500;
           res.setHeader('Content-Type', 'text/plain');
@@ -28,12 +28,12 @@ const server = http.createServer((req, res) => {
           res.end(JSON.stringify(results));
         }
       });
-    } else if (req.method === 'GET' && req.url.startsWith('/medicines/search?')) {
+    } else if (req.method === 'GET' && req.url.startsWith('/medicine/search?')) {
       // Search for medicines by name
       const query = req.url.split('?')[1]; // Extract query parameter
       const partialName = decodeURIComponent(query.split('=')[1]).toLowerCase();
 
-      connection.query('SELECT * FROM Medicine WHERE medicine_name LIKE ?', [`%${partialName}%`], (error, results) => {
+      connection.query('SELECT * FROM medicine WHERE name LIKE ?', [`%${partialName}%`], (error, results) => {
         if (error) {
           res.statusCode = 500;
           res.setHeader('Content-Type', 'text/plain');
@@ -50,11 +50,11 @@ const server = http.createServer((req, res) => {
           }
         }
       });
-    } else if (req.method === 'GET' && req.url.startsWith('/medicines/')) {
+    } else if (req.method === 'GET' && req.url.startsWith('/medicine/')) {
       // Fetch a specific medicine by ID
-      const medicineId = decodeURIComponent(req.url.replace('/medicines/', ''));
+      const medicineId = decodeURIComponent(req.url.replace('/medicine/', ''));
 
-      connection.query('SELECT * FROM Medicine WHERE medicine_name = ?', [medicineId], (error, results) => {
+      connection.query('SELECT * FROM Medicine WHERE name = ?', [medicineId], (error, results) => {
         if (error) {
           res.statusCode = 500;
           res.setHeader('Content-Type', 'text/plain');
