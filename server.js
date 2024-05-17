@@ -4,11 +4,11 @@ const cors = require('cors');
 const port = 5000;
 
 const connection = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: 'Cseeng123#',
-  database: 'medical'
-});
+    host: '192.168.1.14',
+    user: 'sheikh',
+    password: 'Cseeng123#',
+    database: 'medical'
+  });
 
 connection.connect();
 
