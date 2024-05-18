@@ -70,7 +70,8 @@ const server = http.createServer((req, res) => {
           }
         }
       });
-    } else if (req.method === 'POST' && req.url === '/medicines') {
+    }
+     else if (req.method === 'POST' && req.url === '/medicines') {
       // Add a new medicine
       let newMedicineData = '';
     
@@ -104,6 +105,87 @@ const server = http.createServer((req, res) => {
         }
       });
     }
+   else if (req.method === 'DELETE' && req.url.startsWith('/medicines/')) {
+    // Delete a medicine by ID
+    const medicineId = decodeURIComponent(req.url.replace('/medicines/', ''));
+  
+    connection.query('DELETE FROM medicine WHERE medicine_name = ?', [medicineId], (error, result) => {
+      if (error) {
+        res.statusCode = 500;
+        res.setHeader('Content-Type', 'text/plain');
+        res.end('Internal Server Error');
+      } else {
+        if (result.affectedRows > 0) {
+          res.statusCode = 200;
+          res.setHeader('Content-Type', 'text/plain');
+          res.end('Medicine deleted successfully');
+        } else {
+          res.statusCode = 404;
+          res.setHeader('Content-Type', 'text/plain');
+          res.end('Medicine not found');
+        }
+      }
+    });
+  }else if (req.method === 'PUT' && req.url.startsWith('/medicines/')) {
+    // Update all fields of a medicine by name
+    const currentMedicineName = decodeURIComponent(req.url.replace('/medicines/', ''));
+    let updatedMedicineData = '';
+  
+    req.on('data', (chunk) => {
+      updatedMedicineData += chunk;
+    });
+  
+    req.on('end', () => {
+      try {
+        const updatedMedicine = JSON.parse(updatedMedicineData);
+  
+        // Validate and prepare updated fields
+        const updatedFields = {};
+        if (updatedMedicine.medicine_name !== undefined) {
+          updatedFields.medicine_name = updatedMedicine.medicine_name;
+        }
+        if (updatedMedicine.price !== undefined) {
+          updatedFields.price = parseInt(updatedMedicine.price);
+        }
+        if (updatedMedicine.location !== undefined) {
+          updatedFields.location = updatedMedicine.location;
+        }
+  
+        // Check if there are fields to update
+        if (Object.keys(updatedFields).length === 0) {
+          res.statusCode = 400;
+          res.setHeader('Content-Type', 'text/plain');
+          res.end('No valid fields provided for update');
+          return;
+        }
+  
+        connection.query('UPDATE medicine SET ? WHERE medicine_name = ?', [updatedFields, currentMedicineName], (error, result) => {
+          if (error) {
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'text/plain');
+            res.end('Internal Server Error');
+          } else {
+            if (result.affectedRows > 0) {
+              res.statusCode = 200;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify(updatedFields));
+            } else {
+              res.statusCode = 404;
+              res.setHeader('Content-Type', 'text/plain');
+              res.end('Medicine not found');
+            }
+          }
+        });
+      } catch (error) {
+        res.statusCode = 400;
+        res.setHeader('Content-Type', 'text/plain');
+        res.end('Invalid JSON data');
+      }
+    });
+  }
+  
+  
+  
      else {
       res.statusCode = 404;
       res.setHeader('Content-Type', 'text/plain');
