@@ -27,7 +27,22 @@ const server = http.createServer((req, res) => {
           res.end(JSON.stringify(results));
         }
       });
-    } else if (req.method === 'GET' && req.url.startsWith('/medicines/search?')) {
+    }    else if (req.method === 'GET' && req.url === '/NxrMedicine') {
+      // Fetch all medicines from the database
+      connection.query('SELECT id, name, quantity, price, brand FROM Nrx', (error, results) => {
+        if (error) {
+          res.statusCode = 500;
+          res.setHeader('Content-Type', 'text/plain');
+          res.end('Internal Server Error');
+          console.error(error);
+        } else {
+          res.statusCode = 200;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify(results));
+        }
+      });
+    }
+    else if (req.method === 'GET' && req.url.startsWith('/medicines/search?')) {
       // Search for medicines by name
       const query = req.url.split('?')[1]; // Extract query parameter
       const partialName = decodeURIComponent(query.split('=')[1]).toLowerCase();
@@ -71,6 +86,7 @@ const server = http.createServer((req, res) => {
         }
       });
     }
+    
      else if (req.method === 'POST' && req.url === '/medicines') {
       // Add a new medicine
       let newMedicineData = '';
@@ -102,6 +118,49 @@ const server = http.createServer((req, res) => {
           res.statusCode = 400;
           res.setHeader('Content-Type', 'text/plain');
           res.end('Invalid JSON data');
+        }
+      });
+    }
+  
+    
+    else if (req.method === 'POST' && req.url === '/NxrMedicine') {
+      // Add a new medicine
+      let newMedicineData = '';
+  
+      req.on('data', (chunk) => {
+        newMedicineData += chunk;
+      });
+  
+      req.on('end', () => {
+        try {
+          const newMedicine = JSON.parse(newMedicineData);
+  
+          // Validate and parse necessary fields
+          newMedicine.quantity = parseInt(newMedicine.quantity, 10);
+          newMedicine.price = parseInt(newMedicine.price, 10);
+  
+          if (isNaN(newMedicine.quantity) || isNaN(newMedicine.price)) {
+            throw new Error('Invalid quantity or price');
+          }
+  
+          connection.query('INSERT INTO Nrx SET ?', newMedicine, (error, result) => {
+            if (error) {
+              res.statusCode = 500;
+              res.setHeader('Content-Type', 'text/plain');
+              res.end('Internal Server Error');
+              console.error(error);
+            } else {
+              newMedicine.id = result.insertId;
+              res.statusCode = 201;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify(newMedicine));
+            }
+          });
+        } catch (error) {
+          res.statusCode = 400;
+          res.setHeader('Content-Type', 'text/plain');
+          res.end('Invalid JSON data');
+          console.error(error);
         }
       });
     }
